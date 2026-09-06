@@ -21,6 +21,29 @@ Integration tests use a real Maven server (Nexus or Reposilite in Docker). E2E t
 - Builds registry with `config.e2e.yml` / `config.e2e.reposilite.yml` (port 8082), publishes `example.SamplePackage@1.0.0` via Swift CLI, verifies metadata, manifests, collections, and consumer resolve.
 - HTTPS: `make test-e2e-generate-certs` then `E2E_REGISTRY_URL=https://127.0.0.1:8082 make test-e2e-swift`.
 
+## S3 backend tests
+
+Require AWS SSO login (e.g. `./aws_login.sh`); default bucket/region/profile match the `spm-data`
+bucket provisioned via `spm_registry/terraform` (override with `S3_TEST_BUCKET`, `S3_TEST_REGION`,
+`S3_TEST_PROFILE`).
+
+| Goal | Command |
+|------|--------|
+| Direct Go-level repo/s3 checks | `make test-s3-integration` |
+| Swift CLI publish + resolve/build/run against S3 | `make test-e2e-swift-s3` (clears its bucket prefix before running, leaves the published files for inspection afterward) |
+| Publish a binaryTarget package (real .xcframework) to S3 | `make test-e2e-publish-binarytarget-s3` (documents that this currently succeeds even though the archive is tens of MB, since `publish.maxSize` isn't enforced anywhere) |
+
+## OpenAPI conformance checking
+
+E2E tests that talk to the registry over Go's `http.Client` (all three S3 tests above, plus the
+Maven-backed `test-e2e-swift`/`test-e2e-registry`) run every request/response pair through
+`apivalidate`, which checks them against a vendored copy of the official Swift Package Registry
+OpenAPI spec (`openapi/registry.openapi.yaml`, from `swiftlang/swift-package-manager`). Any
+deviation is logged as a `slog.Warn`, not a test failure — this is a diagnostic aid for spec drift,
+not a correctness gate. Requests to this server's own `/collection` extension (not part of the
+official spec) are silently skipped. See `apivalidate/apivalidate.go` for details, including the
+known Go-regexp-vs-ECMA-262 limitation around the Scope/PackageName parameter patterns.
+
 ## Config reference
 
 | Env | Purpose |

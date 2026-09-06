@@ -24,6 +24,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"OpenSPMRegistry/apivalidate"
 )
 
 // TestPublishBinaryTargetS3 publishes example.binarytarget to the S3-backed registry and asserts
@@ -95,6 +97,7 @@ func TestPublishBinaryTargetS3(t *testing.T) {
 		// default 30s used by the other S3 E2E test.
 		httpClient: &http.Client{Timeout: 120 * time.Second},
 	}
+	apivalidate.WrapClient(env.httpClient, filepath.Join(root, "openapi", "registry.openapi.yaml"))
 
 	os.RemoveAll(filepath.Join(pkgDir, ".build"))
 	os.RemoveAll(filepath.Join(pkgDir, ".swiftpm"))

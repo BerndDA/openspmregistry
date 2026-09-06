@@ -22,6 +22,8 @@ import (
 	"testing"
 	"time"
 
+	"OpenSPMRegistry/apivalidate"
+
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
@@ -169,6 +171,7 @@ func TestSwiftPublishResolveS3(t *testing.T) {
 		utilsPkgDir:  utilsPkgDir,
 		httpClient:   &http.Client{Timeout: 30 * time.Second},
 	}
+	apivalidate.WrapClient(env.httpClient, filepath.Join(root, "openapi", "registry.openapi.yaml"))
 
 	const scope = "example"
 

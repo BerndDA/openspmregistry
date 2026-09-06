@@ -22,6 +22,7 @@ import (
 	"testing"
 	"time"
 
+	"OpenSPMRegistry/apivalidate"
 	"OpenSPMRegistry/internal/e2ecerts"
 )
 
@@ -179,6 +180,7 @@ func setupE2E(t *testing.T) *e2eEnv {
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		}
 	}
+	apivalidate.WrapClient(httpClient, filepath.Join(root, "openapi", "registry.openapi.yaml"))
 
 	env := &e2eEnv{
 		rootDir:       root,
