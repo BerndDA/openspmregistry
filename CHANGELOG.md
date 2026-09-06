@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Added S3 repository backend for storing packages in Amazon S3 (or S3-compatible services)
 - Added `make test-e2e-swift-s3`: Swift CLI E2E test (publish + resolve/build/run) against the S3 backend
+- Added `make test-e2e-publish-binarytarget-s3`: documents that publishing a package with local binaryTarget dependencies (large archives) currently succeeds, since `publish.maxSize` is not enforced anywhere
 
 ## [0.2.0] - 2026-03-22
 

@@ -7,7 +7,7 @@ ifdef E2E_HTTPS
 E2E_REGISTRY_URL := https://127.0.0.1:8082
 endif
 
-.PHONY: help build clean build-docker run tailwind tailwind-watch lint staticcheck golangci-lint errcheck release changelog-unreleased test-integration test-integration-up test-integration-down test-s3-integration test-e2e-generate-certs test-e2e-swift test-e2e-swift-s3 test-e2e-registry test-e2e-full test-e2e-swift-https test-e2e-registry-https test-e2e-full-https
+.PHONY: help build clean build-docker run tailwind tailwind-watch lint staticcheck golangci-lint errcheck release changelog-unreleased test-integration test-integration-up test-integration-down test-s3-integration test-e2e-generate-certs test-e2e-swift test-e2e-swift-s3 test-e2e-publish-binarytarget-s3 test-e2e-registry test-e2e-full test-e2e-swift-https test-e2e-registry-https test-e2e-full-https
 
 # Default target when no arguments are given to make
 help:
@@ -35,6 +35,7 @@ help:
 	@echo "  test-e2e-generate-certs - Generate E2E HTTPS certs (for optional HTTPS testing)"
 	@echo "  test-e2e-swift - E2E: Swift publish + resolve (Maven server must be up; requires Swift)"
 	@echo "  test-e2e-swift-s3 - E2E: Swift publish + resolve against the S3 backend (requires AWS SSO login and Swift)"
+	@echo "  test-e2e-publish-binarytarget-s3 - E2E: publish a binaryTarget package to S3 (documents that oversized archives currently succeed)"
 	@echo "  test-e2e-registry - E2E: Registry HTTP API against file and Maven backends"
 	@echo "  test-e2e-full - Start Maven server, run E2E Swift and registry tests, then stop"
 	@echo "  test-e2e-swift-https - E2E Swift over HTTPS (requires certs: make test-e2e-generate-certs)"
@@ -209,6 +210,14 @@ test-e2e-swift:
 # be inspected in S3 (e.g. via the console or `aws s3 ls`).
 test-e2e-swift-s3:
 	E2E_TESTS=1 go test -tags=e2e -v -count=1 ./e2e/... -run TestSwiftPublishResolveS3
+
+# E2E: publish a package with local binaryTarget dependencies (real .xcframework binaries) to the
+# S3 backend. Documents CURRENT behavior: publish.maxSize is not enforced anywhere, so this
+# succeeds despite the archive being tens of MB. Requires AWS SSO login, Swift, and the
+# testdata/e2e/example.binarytarget fixture (skipped automatically if that directory is absent).
+# Clears its bucket prefix before running but leaves the published archive in place afterward.
+test-e2e-publish-binarytarget-s3:
+	E2E_TESTS=1 go test -tags=e2e -v -count=1 ./e2e/... -run TestPublishBinaryTargetS3
 
 # E2E registry: exercise registry HTTP API against file and Maven backends (no Swift required).
 # test-e2e-registry: run E2E test only (start Maven server first with make test-integration-up for Maven backend).
