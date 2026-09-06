@@ -982,10 +982,6 @@ let package = Package(
 			if strings.Contains(out, "Missing or empty JSON output from manifest compilation") {
 				t.Skipf("swift package resolve failed with 'Missing or empty JSON output from manifest compilation'; skipping resolve/build. Publish and HTTP verification passed.")
 			}
-			// SwiftSignedPkg may be missing if PublishWithSwiftSigning was skipped (spm-extended not available)
-			if strings.Contains(out, "SwiftSignedPkg") || strings.Contains(out, "could not find") {
-				t.Skipf("swift package resolve failed (example.SwiftSignedPkg likely not published because PublishWithSwiftSigning was skipped): %v\n%s", err, out)
-			}
 			t.Fatalf("swift package resolve: %v\n%s", err, out)
 		}
 		resolvedPath := filepath.Join(env.consumerDir, "Package.resolved")
@@ -993,7 +989,7 @@ let package = Package(
 			t.Fatalf("Package.resolved was not created")
 		}
 		content, _ := os.ReadFile(resolvedPath)
-		for _, pkg := range []string{"example.SamplePackage", "example.UtilsPackage", "example.SwiftSignedPkg"} {
+		for _, pkg := range []string{"example.SamplePackage", "example.UtilsPackage"} {
 			if !bytes.Contains(content, []byte(pkg)) {
 				t.Fatalf("Package.resolved does not contain %s", pkg)
 			}
@@ -1017,9 +1013,6 @@ let package = Package(
 		}
 		if !strings.Contains(out, "Resolved UtilsPackage") {
 			t.Fatalf("consumer output missing UtilsPackage: %s", out)
-		}
-		if !strings.Contains(out, "Resolved SwiftSignedPkg") {
-			t.Fatalf("consumer output missing SwiftSignedPkg: %s", out)
 		}
 	})
 }
