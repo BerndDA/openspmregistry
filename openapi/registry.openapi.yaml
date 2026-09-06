@@ -12,6 +12,7 @@ paths:
     parameters:
       - $ref: '#/components/parameters/Scope'
       - $ref: '#/components/parameters/PackageName'
+      - $ref: '#/components/parameters/AcceptJSON'
     get:
       tags:
         - Releases
@@ -44,6 +45,7 @@ paths:
       - $ref: '#/components/parameters/Scope'
       - $ref: '#/components/parameters/PackageName'
       - $ref: '#/components/parameters/Version'
+      - $ref: '#/components/parameters/AcceptJSON'
     get:
       tags:
         - Releases
@@ -216,6 +218,7 @@ paths:
       operationId: fetchManifestForPackageRelease
       parameters:
         - $ref: '#/components/parameters/SwiftVersion'
+        - $ref: '#/components/parameters/AcceptSwift'
       responses:
         '200':
           description: Retrieve the manifest file for the specified package release
@@ -262,6 +265,7 @@ paths:
       - $ref: '#/components/parameters/Scope'
       - $ref: '#/components/parameters/PackageName'
       - $ref: '#/components/parameters/Version'
+      - $ref: '#/components/parameters/AcceptZip'
     get:
       tags:
         - Packages
@@ -327,6 +331,7 @@ paths:
   '/identifiers':
     parameters:
       - $ref: '#/components/parameters/Url'
+      - $ref: '#/components/parameters/AcceptJSON'
     get:
       tags:
         - Packages
@@ -417,6 +422,41 @@ components:
       schema:
         type: string
         example: 'https://example.com/mona/LinkedList'
+    # The upstream spec (swiftlang/swift-package-manager) doesn't model the Accept header at all,
+    # even though the real protocol strictly requires it: this server (and any spec-compliant
+    # registry) rejects anything else with 415. Added locally so Swagger UI's "Try it out" sends a
+    # request that actually works, instead of defaulting to whatever's in a response's `content:`
+    # media type (typically plain "application/json").
+    AcceptJSON:
+      name: Accept
+      in: header
+      required: true
+      description: Must be exactly this value; this server rejects any other Accept header with 415.
+      schema:
+        type: string
+        default: application/vnd.swift.registry.v1+json
+        enum:
+          - application/vnd.swift.registry.v1+json
+    AcceptSwift:
+      name: Accept
+      in: header
+      required: true
+      description: Must be exactly this value; this server rejects any other Accept header with 415.
+      schema:
+        type: string
+        default: application/vnd.swift.registry.v1+swift
+        enum:
+          - application/vnd.swift.registry.v1+swift
+    AcceptZip:
+      name: Accept
+      in: header
+      required: true
+      description: Must be exactly this value; this server rejects any other Accept header with 415.
+      schema:
+        type: string
+        default: application/vnd.swift.registry.v1+zip
+        enum:
+          - application/vnd.swift.registry.v1+zip
   responses:
     Unauthorized:
       description: Authentication failed due to invalid credentials provided
