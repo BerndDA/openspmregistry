@@ -1,4 +1,4 @@
-FROM golang:1.23  AS build-stage
+FROM golang:1.24  AS build-stage
 LABEL authors="wolfgangreithmeier"
 LABEL org.opencontainers.image.description="Open Source Swift Package Manager Registry implementation based on https://github.com/swiftlang/swift-package-manager/blob/main/Documentation/PackageRegistry/Registry.md"
 

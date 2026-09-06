@@ -8,6 +8,7 @@ import (
 	"OpenSPMRegistry/repo"
 	"OpenSPMRegistry/repo/files"
 	"OpenSPMRegistry/repo/maven"
+	"OpenSPMRegistry/repo/s3"
 	"context"
 	"flag"
 	"fmt"
@@ -96,6 +97,12 @@ func main() {
 			log.Fatalf("Failed to create Maven repository: %v", err)
 		}
 		r = mavenRepo
+	case "s3":
+		s3Repo, err := s3.NewS3Repo(context.Background(), repoConfig.S3)
+		if err != nil {
+			log.Fatalf("Failed to create S3 repository: %v", err)
+		}
+		r = s3Repo
 	default:
 		log.Fatalf("Unsupported repo type: %s", repoConfig.Type)
 	}

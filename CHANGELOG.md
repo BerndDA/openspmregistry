@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Latest]
 
+- Added S3 repository backend for storing packages in Amazon S3 (or S3-compatible services)
+
 ## [0.2.0] - 2026-03-22
 
 - Added Maven repository backend for storing packages in Maven-compatible servers (e.g. Nexus, Reposilite) [#30](https://github.com/wgr1984/openspmregistry/issues/30) ([#31](https://github.com/wgr1984/openspmregistry/pull/31))

@@ -14,6 +14,13 @@ server:
     #   username: user
     #   password: pass
     #   timeout: 30  # HTTP client timeout in seconds (default: 30)
+    # s3:
+    #   bucket: my-spm-registry-bucket
+    #   region: eu-central-1
+    #   prefix: registry            # optional, shares a bucket across environments/registries
+    #   profile: my-aws-profile     # optional, uses default AWS credential chain when empty
+    #   endpoint: https://minio.example.com  # optional, for S3-compatible services
+    #   usePathStyle: false         # required by most S3-compatible services when endpoint is set
   publish:
     maxSize: 204800
   auth:

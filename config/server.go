@@ -32,6 +32,7 @@ type Repo struct {
 	Path  string      `yaml:"path"`
 	Type  string      `yaml:"type"`
 	Maven MavenConfig `yaml:"maven"`
+	S3    S3Config    `yaml:"s3"`
 }
 
 type MavenConfig struct {
@@ -41,6 +42,21 @@ type MavenConfig struct {
 	Username      string `yaml:"username"`
 	Password      string `yaml:"password"`
 	Timeout       int    `yaml:"timeout"`
+}
+
+type S3Config struct {
+	Bucket string `yaml:"bucket"`
+	Region string `yaml:"region"`
+	// Prefix is prepended to every object key, allowing multiple registries to share a bucket.
+	Prefix string `yaml:"prefix"`
+	// Profile selects a named AWS profile (e.g. SSO) from the shared AWS config/credentials files.
+	// Leave empty to use the default credential chain (env vars, instance role, default profile, ...).
+	Profile string `yaml:"profile"`
+	// Endpoint overrides the default AWS endpoint, for S3-compatible services (MinIO, LocalStack, ...).
+	Endpoint string `yaml:"endpoint"`
+	// UsePathStyle selects path-style addressing (bucket in the path instead of the host),
+	// required by most S3-compatible services when Endpoint is set.
+	UsePathStyle bool `yaml:"usePathStyle"`
 }
 
 type AuthConfig struct {
