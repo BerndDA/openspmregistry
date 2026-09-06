@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -115,6 +116,69 @@ func Test_StaticAction_Returns404_ForNonExistentFile(t *testing.T) {
 	// Check status code
 	if w.Code != http.StatusNotFound {
 		t.Errorf("expected status code %d, got %d", http.StatusNotFound, w.Code)
+	}
+}
+
+// symlinkRepoFile makes repoRelPath (relative to the repo root, e.g. "openapi/registry.openapi.yaml")
+// available at the same relative path under this test's working directory (controller/) via a
+// symlink, mirroring the actual layout at runtime (the real files live at the repo root, but
+// `go test` runs with the package directory as its working directory). repoRelPath must have
+// exactly one directory component (e.g. "dir/file.ext"). Returns a cleanup func that removes the
+// created directory.
+func symlinkRepoFile(t *testing.T, repoRelPath string) func() {
+	t.Helper()
+	target, err := filepath.Abs(filepath.Join("..", repoRelPath))
+	if err != nil {
+		t.Fatalf("resolve %s: %v", repoRelPath, err)
+	}
+
+	dir := filepath.Dir(repoRelPath)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		t.Fatalf("mkdir %s: %v", dir, err)
+	}
+	if err := os.Symlink(target, repoRelPath); err != nil {
+		t.Fatalf("symlink %s -> %s: %v", repoRelPath, target, err)
+	}
+
+	return func() { _ = os.RemoveAll(dir) }
+}
+
+func Test_OpenAPISpecAction_ServesVendoredSpec(t *testing.T) {
+	defer symlinkRepoFile(t, "openapi/registry.openapi.yaml")()
+
+	c := NewController(config.ServerConfig{}, nil)
+
+	req := httptest.NewRequest("GET", "/openapi.yaml", nil)
+	w := httptest.NewRecorder()
+
+	c.OpenAPISpecAction(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status code %d, got %d", http.StatusOK, w.Code)
+	}
+	if contentType := w.Header().Get("Content-Type"); contentType != "application/yaml" {
+		t.Errorf("expected Content-Type application/yaml, got %s", contentType)
+	}
+	if !strings.Contains(w.Body.String(), "openapi:") {
+		t.Errorf("expected served content to look like an OpenAPI document, got: %s", w.Body.String())
+	}
+}
+
+func Test_DocsAction_ServesSwaggerUIPage(t *testing.T) {
+	defer symlinkRepoFile(t, "static/swagger.html")()
+
+	c := NewController(config.ServerConfig{}, nil)
+
+	req := httptest.NewRequest("GET", "/docs", nil)
+	w := httptest.NewRecorder()
+
+	c.DocsAction(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status code %d, got %d", http.StatusOK, w.Code)
+	}
+	if !strings.Contains(w.Body.String(), "SwaggerUIBundle") {
+		t.Errorf("expected served content to reference SwaggerUIBundle, got: %s", w.Body.String())
 	}
 }
 

@@ -36,6 +36,8 @@ Browsing, Publishing (including signing) and retrieving of swift packages.
 
 **New**: Support for [SE-0291 Package Collections](PACKAGE_COLLECTIONS.md) - discover packages through curated collections in Xcode!
 
+**New**: Interactive API docs at `/docs` (Swagger UI), backed by the vendored spec at `/openapi.yaml`.
+
 [More Features](https://wgr1984.github.io/docs/openspmregistry/#features)
 
 ## Use Docker

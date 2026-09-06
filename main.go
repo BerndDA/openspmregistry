@@ -141,6 +141,8 @@ func main() {
 	registryMux.HandleFunc("GET /favicon.ico", c.StaticAction)
 	registryMux.HandleFunc("GET /favicon.svg", c.StaticAction)
 	registryMux.HandleFunc("GET /output.css", c.StaticAction)
+	registryMux.HandleFunc("GET /openapi.yaml", c.OpenAPISpecAction)
+	registryMux.HandleFunc("GET /docs", c.DocsAction)
 
 	// Path dispatcher: for HEAD, discard response body; then /collection* -> collectionMux, else -> auth-wrapped registryMux.
 	// Go 1.22+ matches HEAD to GET patterns, so the same handler runs; we only strip the body.

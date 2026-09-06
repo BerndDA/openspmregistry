@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `make test-e2e-swift-s3`: Swift CLI E2E test (publish + resolve/build/run) against the S3 backend
 - Added `make test-e2e-publish-binarytarget-s3`: documents that publishing a package with local binaryTarget dependencies (large archives) currently succeeds, since `publish.maxSize` is not enforced anywhere
 - Added `apivalidate`: checks real E2E HTTP request/response pairs against a vendored copy of the official Swift Package Registry OpenAPI spec (`openapi/registry.openapi.yaml`), logging any conformance deviation as a warning rather than failing tests
+- Added `GET /docs` (Swagger UI) and `GET /openapi.yaml` (the vendored spec), both public/unauthenticated, for browsing the registry API
 
 ## [0.2.0] - 2026-03-22
 
