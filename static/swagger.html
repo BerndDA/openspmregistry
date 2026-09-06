@@ -10,11 +10,44 @@
   <div id="swagger-ui"></div>
   <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
   <script>
+    // This server strictly requires the real SE-0391 vendor Accept header (see
+    // controller/utils.go's checkHeadersEnforce) and rejects anything else with 415. The spec
+    // declares this as a header parameter (openapi/registry.openapi.yaml), but Swagger UI has a
+    // known limitation: it auto-manages the Accept header from the response content-type
+    // dropdown and silently overrides a same-named parameter's value when it actually builds the
+    // request, even though the form shows the right value selected. This interceptor forces the
+    // correct value so "Try it out" / Execute actually works.
+    function requiredAcceptHeader(url) {
+      if (/\/Package\.swift(\?|$)/.test(url)) {
+        return 'application/vnd.swift.registry.v1+swift';
+      }
+      if (/\.zip(\?|$)/.test(url)) {
+        return 'application/vnd.swift.registry.v1+zip';
+      }
+      return 'application/vnd.swift.registry.v1+json';
+    }
+
     window.onload = () => {
       window.ui = SwaggerUIBundle({
         url: '/openapi.yaml',
         dom_id: '#swagger-ui',
         presets: [SwaggerUIBundle.presets.apis],
+        requestInterceptor: (req) => {
+          if (!/\/login$/.test(req.url)) {
+            // Swagger UI's own auto-negotiation already set some case-variant of "Accept" (e.g.
+            // lowercase "accept") on req.headers; overwriting via req.headers['Accept'] alone
+            // leaves that one in place too, and the two get joined into a single comma-separated
+            // header ("application/json, application/vnd.swift.registry.v1+json") that this
+            // server also rejects. Remove every case-variant before setting ours.
+            Object.keys(req.headers || {}).forEach((key) => {
+              if (key.toLowerCase() === 'accept') {
+                delete req.headers[key];
+              }
+            });
+            req.headers['Accept'] = requiredAcceptHeader(req.url);
+          }
+          return req;
+        },
       });
     };
   </script>
