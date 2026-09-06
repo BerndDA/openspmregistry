@@ -32,8 +32,19 @@ func main() {
 	adminPass := getAdminPassword(container, targetPass)
 	client := &http.Client{}
 
+	// Nexus 3.77+ Community Edition blocks component upload/download until the EULA is accepted.
+	if err := acceptEULA(client, nexusURL, "admin", adminPass); err != nil {
+		slog.Warn("accept EULA", "err", err)
+	} else {
+		slog.Info("EULA accepted")
+	}
+
 	scriptName := "maven-hosted-" + repoKey
-	if err := uploadScript(client, nexusURL, "admin", adminPass, scriptName, fmt.Sprintf("repository.createMavenHosted('%s')", repoKey)); err != nil {
+	// Nexus 3.96+ removed the single-arg createMavenHosted overload; full signature is now required.
+	createRepoGroovy := fmt.Sprintf(
+		"import org.sonatype.nexus.repository.maven.VersionPolicy; import org.sonatype.nexus.repository.maven.LayoutPolicy; import org.sonatype.nexus.repository.config.WritePolicy; repository.createMavenHosted('%s', 'default', true, VersionPolicy.MIXED, WritePolicy.ALLOW_ONCE, LayoutPolicy.STRICT)",
+		repoKey)
+	if err := uploadScript(client, nexusURL, "admin", adminPass, scriptName, createRepoGroovy); err != nil {
 		slog.Error("upload create-repo script", "err", err)
 		os.Exit(1)
 	}
@@ -133,7 +144,8 @@ func uploadScript(client *http.Client, baseURL, user, pass, name, content string
 		return nil
 	case 500:
 		lower := strings.ToLower(string(b))
-		if strings.Contains(lower, "duplicated") || strings.Contains(lower, "script_name_idx") || strings.Contains(lower, "duplicatedexception") {
+		// Nexus 3.96+ uses datastore DuplicateKeyException; older versions used "duplicated"/DuplicatedException.
+		if strings.Contains(lower, "duplicated") || strings.Contains(lower, "script_name_idx") || strings.Contains(lower, "duplicatedexception") || strings.Contains(lower, "duplicatekeyexception") || strings.Contains(lower, "duplicate key") {
 			slog.Info("script already exists (500)", "name", name)
 			return nil
 		}
@@ -165,6 +177,53 @@ func runScript(client *http.Client, baseURL, user, pass, name string) error {
 		return nil
 	}
 	return fmt.Errorf("run script HTTP %d: %s", resp.StatusCode, s)
+}
+
+func acceptEULA(client *http.Client, baseURL, user, pass string) error {
+	getReq, err := http.NewRequest(http.MethodGet, baseURL+"/service/rest/v1/system/eula", nil)
+	if err != nil {
+		return err
+	}
+	getReq.SetBasicAuth(user, pass)
+	getResp, err := client.Do(getReq)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = getResp.Body.Close() }()
+	b, err := io.ReadAll(getResp.Body)
+	if err != nil {
+		return err
+	}
+	if getResp.StatusCode != 200 {
+		return fmt.Errorf("GET eula HTTP %d: %s", getResp.StatusCode, string(b))
+	}
+	var eula struct {
+		Disclaimer string `json:"disclaimer"`
+		Accepted   bool   `json:"accepted"`
+	}
+	if err := json.Unmarshal(b, &eula); err != nil {
+		return err
+	}
+	if eula.Accepted {
+		return nil
+	}
+	raw, _ := json.Marshal(map[string]any{"accepted": true, "disclaimer": eula.Disclaimer})
+	postReq, err := http.NewRequest(http.MethodPost, baseURL+"/service/rest/v1/system/eula", bytes.NewReader(raw))
+	if err != nil {
+		return err
+	}
+	postReq.SetBasicAuth(user, pass)
+	postReq.Header.Set("Content-Type", "application/json")
+	postResp, err := client.Do(postReq)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = postResp.Body.Close() }()
+	if postResp.StatusCode >= 200 && postResp.StatusCode < 300 {
+		return nil
+	}
+	rb, _ := io.ReadAll(postResp.Body)
+	return fmt.Errorf("POST eula HTTP %d: %s", postResp.StatusCode, string(rb))
 }
 
 func changePassword(client *http.Client, baseURL, user, currentPass, newPass string) error {

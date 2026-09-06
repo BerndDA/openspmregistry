@@ -1,9 +1,10 @@
 # Maven test providers: start one via MAVEN_PROVIDER=nexus (default) or MAVEN_PROVIDER=reposilite.
 # Nexus 3.68.1+ addresses critical security vulnerabilities (see Nexus UI warnings on 3.21.x).
+# 3.90.5+ ships multi-arch (linux/amd64 + linux/arm64) images, avoiding emulation on Apple Silicon.
 # Scripting must be enabled so the bootstrap script can create the Maven repo via Script API.
 services:
   nexus:
-    image: sonatype/nexus3:3.68.1
+    image: sonatype/nexus3:3.96.0
     container_name: nexus-test
     ports:
       - "8081:8081"
