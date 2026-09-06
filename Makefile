@@ -205,6 +205,8 @@ test-e2e-swift:
 # E2E Swift against the S3 backend: publish + resolve/build/run using the real swift CLI, against
 # a real bucket (requires AWS SSO login, e.g. ./aws_login.sh). Defaults match the "spm-data" bucket
 # provisioned via spm_registry/terraform; override with S3_TEST_BUCKET, S3_TEST_REGION, S3_TEST_PROFILE.
+# Clears the bucket before running but leaves the published files in place afterward, so they can
+# be inspected in S3 (e.g. via the console or `aws s3 ls`).
 test-e2e-swift-s3:
 	E2E_TESTS=1 go test -tags=e2e -v -count=1 ./e2e/... -run TestSwiftPublishResolveS3
 

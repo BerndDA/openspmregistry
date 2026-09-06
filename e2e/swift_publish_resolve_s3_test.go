@@ -5,13 +5,13 @@
 // Run with: make test-e2e-swift-s3 (requires AWS SSO login, e.g. ./aws_login.sh, and Swift toolchain).
 // Unlike TestSwiftPublishResolve (Maven-backed), this drives a registry started with repo.type=s3
 // against a real S3 bucket, using the actual swift CLI for both publish and dependency resolution.
+// The bucket is cleared before the test runs but deliberately left populated afterward, so the
+// published package files can be inspected in S3 (e.g. via the console or `aws s3 ls`).
 package e2e
 
 import (
 	"bytes"
 	"context"
-	"crypto/rand"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -75,7 +75,7 @@ func checkS3Access(t *testing.T, client *s3.Client, bucket string) {
 	}
 }
 
-// cleanupS3Prefix removes every object under prefix so repeated runs don't accumulate garbage.
+// cleanupS3Prefix removes every object under prefix (pass "" to clear the whole bucket).
 // Best-effort: failures are logged, not fatal.
 func cleanupS3Prefix(t *testing.T, client *s3.Client, bucket string, prefix string) {
 	t.Helper()
@@ -125,12 +125,11 @@ func TestSwiftPublishResolveS3(t *testing.T) {
 	client := newS3E2EClient(t, region, profile)
 	checkS3Access(t, client, bucket)
 
-	prefixBytes := make([]byte, 8)
-	if _, err := rand.Read(prefixBytes); err != nil {
-		t.Fatalf("generate random prefix: %v", err)
-	}
-	prefix := "e2e-swift/" + hex.EncodeToString(prefixBytes)
-	defer cleanupS3Prefix(t, client, bucket, prefix)
+	// Clear the whole bucket before running so only this run's objects are present afterward.
+	// Deliberately not cleaned up at the end, so the published files can be inspected in S3.
+	cleanupS3Prefix(t, client, bucket, "")
+
+	const prefix = "e2e-swift"
 
 	configYAML := fmt.Sprintf(`server:
   hostname: 127.0.0.1
