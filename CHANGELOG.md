@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Latest]
 
 - Added S3 repository backend for storing packages in Amazon S3 (or S3-compatible services)
+- Added `make test-e2e-swift-s3`: Swift CLI E2E test (publish + resolve/build/run) against the S3 backend
 
 ## [0.2.0] - 2026-03-22
 

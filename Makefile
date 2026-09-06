@@ -7,7 +7,7 @@ ifdef E2E_HTTPS
 E2E_REGISTRY_URL := https://127.0.0.1:8082
 endif
 
-.PHONY: help build clean build-docker run tailwind tailwind-watch lint staticcheck golangci-lint errcheck release changelog-unreleased test-integration test-integration-up test-integration-down test-e2e-generate-certs test-e2e-swift test-e2e-registry test-e2e-full test-e2e-swift-https test-e2e-registry-https test-e2e-full-https
+.PHONY: help build clean build-docker run tailwind tailwind-watch lint staticcheck golangci-lint errcheck release changelog-unreleased test-integration test-integration-up test-integration-down test-s3-integration test-e2e-generate-certs test-e2e-swift test-e2e-swift-s3 test-e2e-registry test-e2e-full test-e2e-swift-https test-e2e-registry-https test-e2e-full-https
 
 # Default target when no arguments are given to make
 help:
@@ -31,8 +31,10 @@ help:
 	@echo "  test-integration - Run integration tests (requires Docker; default Nexus, or MAVEN_PROVIDER=reposilite)"
 	@echo "  test-integration-up - Start Maven test server (Nexus or Reposilite per MAVEN_PROVIDER)"
 	@echo "  test-integration-down - Stop Maven test server(s)"
+	@echo "  test-s3-integration - Run S3 backend integration tests against a real bucket (requires AWS SSO login)"
 	@echo "  test-e2e-generate-certs - Generate E2E HTTPS certs (for optional HTTPS testing)"
 	@echo "  test-e2e-swift - E2E: Swift publish + resolve (Maven server must be up; requires Swift)"
+	@echo "  test-e2e-swift-s3 - E2E: Swift publish + resolve against the S3 backend (requires AWS SSO login and Swift)"
 	@echo "  test-e2e-registry - E2E: Registry HTTP API against file and Maven backends"
 	@echo "  test-e2e-full - Start Maven server, run E2E Swift and registry tests, then stop"
 	@echo "  test-e2e-swift-https - E2E Swift over HTTPS (requires certs: make test-e2e-generate-certs)"
@@ -167,6 +169,12 @@ test-integration-down:
 	@echo "Stopping Maven test server(s)..."
 	docker-compose -f docker-compose.test.yml down
 
+# S3 integration test: exercises repo/s3 against a real bucket (requires AWS SSO login, e.g. ./aws_login.sh).
+# Defaults (bucket/region/profile) match the "spm-data" bucket provisioned via spm_registry/terraform;
+# override with S3_TEST_BUCKET, S3_TEST_REGION, S3_TEST_PROFILE env vars.
+test-s3-integration:
+	go test -tags=integration -v ./repo/s3/... -run TestIntegration
+
 test-integration: test-integration-up
 	@provider=$${MAVEN_PROVIDER:-nexus}; \
 	if [ "$$provider" = "reposilite" ]; then \
@@ -193,6 +201,12 @@ test-e2e-swift:
 	  passfile=".nexus-test-password"; [ -f "$$passfile" ] && MAVEN_REPO_PASSWORD=$$(cat "$$passfile") || MAVEN_REPO_PASSWORD=admin123; \
 	  MAVEN_REPO_URL="http://localhost:8081/repository" MAVEN_REPO_NAME=private MAVEN_PROVIDER=nexus MAVEN_REPO_USERNAME=admin MAVEN_REPO_PASSWORD="$$MAVEN_REPO_PASSWORD" E2E_TESTS=1 E2E_REGISTRY_URL="$(E2E_REGISTRY_URL)" go test -tags=e2e -v -count=1 ./e2e/... -run TestSwiftPublishResolve; \
 	fi
+
+# E2E Swift against the S3 backend: publish + resolve/build/run using the real swift CLI, against
+# a real bucket (requires AWS SSO login, e.g. ./aws_login.sh). Defaults match the "spm-data" bucket
+# provisioned via spm_registry/terraform; override with S3_TEST_BUCKET, S3_TEST_REGION, S3_TEST_PROFILE.
+test-e2e-swift-s3:
+	E2E_TESTS=1 go test -tags=e2e -v -count=1 ./e2e/... -run TestSwiftPublishResolveS3
 
 # E2E registry: exercise registry HTTP API against file and Maven backends (no Swift required).
 # test-e2e-registry: run E2E test only (start Maven server first with make test-integration-up for Maven backend).
